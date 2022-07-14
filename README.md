@@ -1,2 +1,2 @@
-# xfel2316
-Data analysis for the SPB/SFX experiment "xfel2316"
+# xfel3046
+Data analysis for the SPB/SFX experiment "xfel3046"
