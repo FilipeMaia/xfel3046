@@ -11,6 +11,15 @@ state = {}
 state['Facility'] = 'EuXFEL'
 state['EuXFEL/DataSource'] = 'tcp://10.253.0.74:55777'
 
+npt = 256
+
+light = np.zeros(npt)
+dark = np.zeros(npt)
+diff = np.zeros(npt)
+
+n_light = 0
+n_dark = 0
+
 mask_file = '/home/awollter/p003046/usr/Shared/awollter/xfel3046/mask/agipd_mask.h5'
 with h5.File(mask_file,'r') as f:
     mask = np.asarray(f['combined'])
@@ -23,7 +32,6 @@ assemask, centremask = geom.position_modules_fast(mask)
 pixel_size = 200e-6
 detector_distance = 0.217
 wavelength = 0.15498e-9 #8 keV
-npt = 256
 ai = azimuthalIntegrator.AzimuthalIntegrator(dist = detector_distance,
                                    poni1 = centremask[0] * pixel_size,
                                    poni2 = centremask[1] * pixel_size,
@@ -31,12 +39,19 @@ ai = azimuthalIntegrator.AzimuthalIntegrator(dist = detector_distance,
                                    pixel2 = pixel_size,
                                    rot1 = 0, rot2=0, rot3=0,
                                    wavelength = wavelength)
+
+
     
 def onEvent(evt):
+    global dark
+    global light
+    global diff
+    global n_light
+    global n_dark
     '''
     Print Processing rate
     '''
-   
+    
     analysis.event.printProcessingRate()
 
     #print(analysis.event.printNativeKeys(evt))
@@ -106,7 +121,24 @@ def onEvent(evt):
     
     plotting.line.plotTrace(i_rec, Q_rec)   
     
-    
+
+
+    if laserOn:
+        light += i 
+        n_light += 1
+    else:
+        dark += i
+        n_dark += 1
+        
+    if (n_light > 0 and n_dark > 0):
+        diff = light/n_light-dark/n_dark
+        diff_rec = add_record(evt['analysis'], 'analysis', 'diff', diff)
+        plotting.line.plotTrace(diff_rec, Q_rec)
+    else:
+        return
+        
+
+
     #print(assem.shape)
     #det_arr[module_numbers] = mods[:,ind]                                                                           
     #assem = geom.position_modules_fast(det_arr)[0][::-1,::-1]                                                       
