@@ -10,6 +10,10 @@ state = {}
 state['Facility'] = 'EuXFEL'
 state['EuXFEL/DataSource'] = 'tcp://10.253.0.74:55777'
 
+mask_file = '/home/amke/p003046/scratch/Berberich/agipd_mask/agipd_mask.h5'
+with h5.File(mask_file,'r') as f:
+    mask = np.asarray(f['combined'])
+
 geom = extra_geom.AGIPD_1MGeometry.from_crystfel_geom('geometry/p3046_manual_refined_geoass_run10.geom')
 #geom = extra_geom.AGIPD_1MGeometry.from_crystfel_geom('geometry/agipd_august_2022_v3.geom')
 
