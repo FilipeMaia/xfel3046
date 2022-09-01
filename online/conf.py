@@ -43,6 +43,8 @@ def onEvent(evt):
     Assemble modules and plot
     '''
     assem, centre = geom.position_modules_fast(evt['photonPixelDetectors']['AGIPD Stacked'].data)
+    # applying the mask on the assebled detector image
+    assem[:, mask] = nan
     assem_sans_nan = np.copy(assem)
     assem_sans_nan[np.isnan(assem)] = 0 
     assem_rec = add_record(evt["analysis"], "analysis", "Assem Image", assem_sans_nan[10,::-1,::-1])                    
