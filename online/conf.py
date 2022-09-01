@@ -10,9 +10,14 @@ state = {}
 state['Facility'] = 'EuXFEL'
 state['EuXFEL/DataSource'] = 'tcp://10.253.0.74:55777'
 
-geom = extra_geom.AGIPD_1MGeometry.from_crystfel_geom('../geometry/agipd_2995_v04.geom')
+geom = extra_geom.AGIPD_1MGeometry.from_crystfel_geom('geometry/p3046_manual_refined_geoass_run10.geom')
 
 def onEvent(evt):
+    '''
+    Print Processing rate
+    '''
+    #analysis.event.printProcessingRate()
+
     #print(analysis.event.printNativeKeys(evt))
     #print(evt['photonPixelDetectors']['AGIPD Stacked'])
     #print(evt['SPB_DET_AGIPD1M-1/DET/9CH0:xtdf']['image.data'])
@@ -23,17 +28,22 @@ def onEvent(evt):
     #print(evt['SPB_DET_AGIP1M-1/DET/STACKED:xtdf'].keys())
     #print(det[0,0,:,:])
     #module = add_record(evt["analysis"], "analysis", "single", det[10,2,:,:])
-    #module.data[np.isnan(module.data)] = 0
+    
     #print(module.data.sum())
-    assem, centre = geom.position_modules_fast(evt['photonPixelDetectors']['AGIPD Stacked'].data)
 
+    '''
+    Assemble modules and plot
+    '''
+    assem, centre = geom.position_modules_fast(evt['photonPixelDetectors']['AGIPD Stacked'].data)
+    assem[np.isnan(assem)] = 0 
+    assem_rec = add_record(evt["analysis"], "analysis", "Assem Image", assem[10,::-1,::-1])                    
+    plotting.image.plotImage(assem_rec, history=10, vmin=0, vmax = 20)
+       
+    #print(assem.shape)
     #det_arr[module_numbers] = mods[:,ind]                                                                           
     #assem = geom.position_modules_fast(det_arr)[0][::-1,::-1]                                                       
     #assem[np.isnan(assem)] = -1
     #brightest_hit = add_record(evt['analysis'], 'analysis', 'Random hit', assem)
     #random_image = add_record(evt["analysis"], "analysis", "Random Image", module.data[10,0])                       
     #print(assem.shape)
-    assem_rec = add_record(evt["analysis"], "analysis", "Assem Image", assem)                       
-
-    plotting.image.plotImage(assem_rec, history=10)
     
