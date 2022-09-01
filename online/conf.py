@@ -10,7 +10,7 @@ state = {}
 state['Facility'] = 'EuXFEL'
 state['EuXFEL/DataSource'] = 'tcp://10.253.0.74:55777'
 
-mask_file = '../mask/agipd_mask.h5'
+mask_file = 'mask/agipd_mask.h5'
 with h5.File(mask_file,'r') as f:
     mask = np.asarray(f['combined'])
 
