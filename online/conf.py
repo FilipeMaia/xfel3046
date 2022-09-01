@@ -18,6 +18,7 @@ geom = extra_geom.AGIPD_1MGeometry.from_crystfel_geom('geometry/p3046_manual_ref
 #geom = extra_geom.AGIPD_1MGeometry.from_crystfel_geom('geometry/agipd_august_2022_v3.geom')
 
 #geom = extra_geom.AGIPD_1MGeometry.from_crystfel_geom('geometry/agipd_2995_v04.geom')
+assemask, centremask = geom.position_modules_fast(mask)
 
 def onEvent(evt):
     '''
