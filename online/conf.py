@@ -1,4 +1,5 @@
 import plotting.image
+import plotting.line
 import analysis.agipd
 import analysis.event
 from backend import add_record
@@ -20,10 +21,17 @@ geom = extra_geom.AGIPD_1MGeometry.from_crystfel_geom('/home/awollter/p003046/us
 #geom = extra_geom.AGIPD_1MGeometry.from_crystfel_geom('geometry/agipd_2995_v04.geom')
 assemask, centremask = geom.position_modules_fast(mask)
 pixel_size = 200e-6
-detector_distance = 0.334
+detector_distance = 0.217
 wavelength = 0.15498e-9 #8 keV
-
-
+npt = 256
+ai = azimuthalIntegrator.AzimuthalIntegrator(dist = detector_distance,
+                                   poni1 = centremask[0] * pixel_size,
+                                   poni2 = centremask[1] * pixel_size,
+                                   pixel1 = pixel_size,
+                                   pixel2 = pixel_size,
+                                   rot1 = 0, rot2=0, rot3=0,
+                                   wavelength = wavelength)
+    
 def onEvent(evt):
     '''
     Print Processing rate
@@ -35,51 +43,69 @@ def onEvent(evt):
     #print(evt['SPB_RR_SYS/ADC/UTC1-2.channel_0.output.schema.data.rawData'])
     #print(evt['SPB_DET_AGIPD1M-1/DET/9CH0:xtdf']['image.data'])
     #print(evt['SPB_DET_AGIP1M-1/DET/STACKED:xtdf']['image.data'])
-
+    #print(evt['SPB_RR_SYS/ADC/UTC1-2:channel_0.output'].keys())
+    laser_voltage = evt['SPB_RR_SYS/ADC/UTC1-2:channel_0.output']['data.rawDataVolt']
+    laser_voltage.data = np.asarray(laser_voltage.data)
+    #print(laser_voltage.data.shape)
+    #    laser_rec = add_record(evt['analysis'], "analysis", "LASER", laser_voltage)
+    #plotting.line.plotTrace(laser_voltage, group = 'analysis')
+    
     #det = evt['photonPixelDetectors']['AGIPD01'].data
-    #det = evt['SPB_DET_AGIP1M-1/DET/STACKED:xtdf']['image.data']
+    # det = evt['SPB_DET_AGIP1M-1/DET/STACKED:xtdf']['
     #print(evt['SPB_DET_AGIP1M-1/DET/STACKED:xtdf'].keys())
+    trainId = evt['SPB_DET_AGIPD1M-1/DET/10CH0:xtdf']['header.trainId'].data
+    #print(laser_voltage.data.max() )
+    laserOn = laser_voltage.data.max() > 0
+    #print('LASER ON' if laserOn else 'LASER OFF')
     #print(det[0,0,:,:])
     #module = add_record(evt["analysis"], "analysis", "single", det[10,2,:,:])
-    
+ 
     #print(module.data.sum())
 
     '''
     Assemble modules and plot
     '''
-    assem, centre = geom.position_modules_fast(evt['photonPixelDetectors']['AGIPD Stacked'].data)
+    
     #print(centre)
     # applying the mask on the assebled detector image
     # assem[:, mask] = np.nan
-    ai = azimuthalIntegrator.AzimuthalIntegrator(dist = detector_distance,
-                                   poni1 = centre[0] * pixel_size,
-                                   poni2 = centre[1] * pixel_size,
-                                   pixel1 = pixel_size,
-                                   pixel2 = pixel_size,
-                                   rot1 = 0, rot2=0, rot3=0,
-                                   wavelength = wavelength)
-    npt = 128
+    
+    
+    
+    
 
-    assem[:,assemask] = np.nan
-    Q, i = ai.integrate1d(assem[10],
-                           npt,
-                           method = "BBox",
-                           #mask = (assemask | (assem[10] = 0)),
-                           radial_range = (0.05, 2),
-                           correctSolidAngle = True,
-                           polarization_factor = 1,
-                           unit = "q_A^-1")
     
-    print(Q.shape)
-    print(i.shape)
     
-    assem[np.isnan(assem)] = 0 
-    assem_rec = add_record(evt["analysis"], "analysis", "Assem Image", assem[10,::-1,::-1])                    
-    plotting.image.plotImage(assem_rec, history=10, log = True)
+
+    # plotting.image.plotImage(assem_rec, history=10, log = True)
+    modules = np.array(evt['photonPixelDetectors']['AGIPD Stacked'].data[1:])
+
+    assem, centre = geom.position_modules_fast(np.nanmean(modules, axis = 0))
+    #assem[:200,:200] = 10
+    print(assem.mean())
+    #print(np.isnan(assem))
+    print(assem.shape)
+    #print(centre)
+    #assem[np.isnan(assem)] = -1
+    assem[assemask] = -1
+    assem_rec = add_record(evt['analysis'], 'analysis','assem_rec', assem[::-1,:])
+    plotting.image.plotImage(assem_rec, history=10)
     
-    '''
     
-    '''
+    Q, i = ai.integrate1d(assem,
+                          npt,
+                          #method = "BBox",
+                          #mask = (assemask | (assem = 0)),
+                          radial_range = (0.1, 2.4),
+                          #correctSolidAngle = True,
+                          #polarization_factor = 1,
+                          unit = "q_A^-1")
+        
+    Q_rec = add_record(evt['analysis'], 'analysis', 'Q', Q)
+    i_rec = add_record(evt['analysis'], 'analysis', 'i', i)
+    
+    plotting.line.plotTrace(i_rec, Q_rec)   
+    
     
     #print(assem.shape)
     #det_arr[module_numbers] = mods[:,ind]                                                                           
