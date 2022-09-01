@@ -11,12 +11,15 @@ state['Facility'] = 'EuXFEL'
 state['EuXFEL/DataSource'] = 'tcp://10.253.0.74:55777'
 
 geom = extra_geom.AGIPD_1MGeometry.from_crystfel_geom('geometry/p3046_manual_refined_geoass_run10.geom')
+#geom = extra_geom.AGIPD_1MGeometry.from_crystfel_geom('geometry/agipd_august_2022_v3.geom')
+
+#geom = extra_geom.AGIPD_1MGeometry.from_crystfel_geom('geometry/agipd_2995_v04.geom')
 
 def onEvent(evt):
     '''
     Print Processing rate
     '''
-    #analysis.event.printProcessingRate()
+    analysis.event.printProcessingRate()
 
     #print(analysis.event.printNativeKeys(evt))
     #print(evt['photonPixelDetectors']['AGIPD Stacked'])
@@ -38,6 +41,12 @@ def onEvent(evt):
     assem[np.isnan(assem)] = 0 
     assem_rec = add_record(evt["analysis"], "analysis", "Assem Image", assem[10,::-1,::-1])                    
     plotting.image.plotImage(assem_rec, history=10, vmin=0, vmax = 20)
+    '''
+    logplot test
+    '''
+
+    log_assem_rec = add_record(evt["analysis"], "analysis", "Log Assem Image", np.log(.000001+assem[10,::-1,::-1]))                    
+    plotting.image.plotImage(log_assem_rec, history=10, vmin=0, vmax = 20)
        
     #print(assem.shape)
     #det_arr[module_numbers] = mods[:,ind]                                                                           

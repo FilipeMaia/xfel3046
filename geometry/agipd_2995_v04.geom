@@ -9,7 +9,8 @@
 ; - data and mask locations in the file
 ; - mask_good & mask_bad values to interpret the mask
 ; - adu_per_eV & photon_energy
-; - clen (detector distance)
+; - clen
+ (detector distance)
 ;
 ; See: http://www.desy.de/~twhite/crystfel/manual-crystfel_geometry.html
 
@@ -1713,9 +1714,3 @@ p15a7/ss = -0.999994x +0.004210y
 p15a7/corner_x = 80.8653
 p15a7/corner_y = -35.9725
 p15a7/coffset = 0.0
-
-
-
-
-
-
