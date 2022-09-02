@@ -9,7 +9,8 @@ import extra_geom
 from pyFAI import azimuthalIntegrator
 state = {}
 state['Facility'] = 'EuXFEL'
-state['EuXFEL/DataSource'] = 'tcp://10.253.0.74:55777'
+#state['EuXFEL/DataSource'] = 'tcp://10.253.0.74:55777'
+state['EuXFEL/DataSource'] = 'tcp://max-exfl-display01.desy.de:9876'
 
 npt = 256
 
@@ -38,10 +39,19 @@ ai = azimuthalIntegrator.AzimuthalIntegrator(dist = detector_distance,
                                    pixel1 = pixel_size,
                                    pixel2 = pixel_size,
                                    rot1 = 0, rot2=0, rot3=0,
-                                   wavelength = wavelength)
+                                wavelength = wavelength)
 
 
-    
+'''
+find a way to implement a mask for an ROI that can be used to calculate difference scattering
+roi_mask
+using module 3, second asic from edge (p2a1 in geom file) 
+y = 0:127, x = 64:127
+roi_mask_x = [0,127]
+roi_mask_y = [64,127
+'''
+
+ 
 def onEvent(evt):
     global dark
     global light
@@ -95,6 +105,9 @@ def onEvent(evt):
     # plotting.image.plotImage(assem_rec, history=10, log = True)
     modules = np.array(evt['photonPixelDetectors']['AGIPD Stacked'].data[1:])
 
+    # normalisation of the 2D scattering patterns needed
+    # norm_2d = np.average(modules[:, 2, roi_mask_x[0]:roi_mask_x[1], roi_mask_y[0]:roi_mask_x[1]])
+    
     assem, centre = geom.position_modules_fast(np.nanmean(modules, axis = 0))
     #assem[:200,:200] = 10
     print(assem.mean())
@@ -105,7 +118,12 @@ def onEvent(evt):
     assem[assemask] = -1
     assem_rec = add_record(evt['analysis'], 'analysis','assem_rec', assem[::-1,:])
     plotting.image.plotImage(assem_rec, history=10)
+
+    i_sum = np.sum(assem[:])
+
+    i_sum_rec = add_record(evt['analysis'], 'analysis','i_sum_rec', i_sum)
     
+    plotting.line.plotHistory(evt['analysis']['i_sum_rec'],label='sum_I')
     
     Q, i = ai.integrate1d(assem,
                           npt,
@@ -121,6 +139,9 @@ def onEvent(evt):
     
     plotting.line.plotTrace(i_rec, Q_rec)   
     
+    #normalize the scattering curves to intensity from q>1.4 to q<1.7
+    norm = np.average(i[np.logical_and(Q>1.4, Q<1.7)])
+    i_norm = i/norm    
 
 
     if laserOn:
