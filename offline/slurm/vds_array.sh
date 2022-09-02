@@ -1,9 +1,9 @@
 #!/bin/bash
 
-#SBATCH --array=38,39
-#SBATCH --time=04:00:00
+#SBATCH --array=0004-0005
+#SBATCH --time=01:00:00
 #SBATCH --partition=upex-beamtime
-#SBATCH --reservation=upex_002601
+#SBATCH --reservation=upex_002995
 #SBATCH --export=ALL
 #SBATCH -J vds
 #SBATCH -o .%j.out
@@ -11,11 +11,11 @@
 
 # Change the runs to process using the --array option on line 3
 
-PREFIX=/gpfs/exfel/exp/SQS/202102/p002601
+PREFIX=/gpfs/exfel/exp/SPB/202202/p002995/
 
 source /etc/profile.d/modules.sh
-source ${PREFIX}/scratch/user/ayyerkar/source_this_at_euxfel
+source ${PREFIX}/scratch/ayyerkar/ana/source_this
 
 run=`printf %.4d "${SLURM_ARRAY_TASK_ID}"`
-extra-data-make-virtual-cxi ${PREFIX}/raw/r${run} -o ${PREFIX}/scratch/vds/r${run}.cxi
-
+extra-data-make-virtual-cxi ${PREFIX}/proc/r${run} -o ${PREFIX}/scratch/vds/proc/r${run}_proc.cxi
+#extra-data-make-virtual-cxi ${PREFIX}/raw/r${run} -o ${PREFIX}/scratch/vds/r${run}_raw.cxi --exc-suspect-trains
