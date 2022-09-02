@@ -11,10 +11,10 @@
 
 # Change the runs to process using the --array option on line 3
 
-PREFIX=/gpfs/exfel/exp/SPB/202202/p002995/
+PREFIX=/gpfs/exfel/exp/SPB/202202/p003046/
 
 source /etc/profile.d/modules.sh
-source ${PREFIX}/scratch/ayyerkar/ana/source_this
+source ${PREFIX}/scratch/usr/Shared/xfel3046/source_this_at_xfel
 
 run=`printf %.4d "${SLURM_ARRAY_TASK_ID}"`
 extra-data-make-virtual-cxi ${PREFIX}/proc/r${run} -o ${PREFIX}/scratch/vds/proc/r${run}_proc.cxi
