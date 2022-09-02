@@ -10,8 +10,7 @@ from pyFAI import azimuthalIntegrator
 state = {}
 state['Facility'] = 'EuXFEL'
 #state['EuXFEL/DataSource'] = 'tcp://10.253.0.74:55777'
-state['EuXFEL/DataSource'] = 'tcp://max-exfl-display01.desy.de:9876'
-
+state['EuXFEL/DataSource'] = 'tcp://max-exfl-display001.desy.de:9876'
 
 npt = 256
 
@@ -22,11 +21,11 @@ diff = np.zeros(npt)
 n_light = 0
 n_dark = 0
 
-mask_file = '../mask/agipd_mask.h5'
+mask_file = '/gpfs/exfel/u/usr/SPB/202202/p003046/Shared/tong/xfel3046/mask/agipd_mask.h5'
 with h5.File(mask_file,'r') as f:
     mask = np.asarray(f['combined'])
 
-geom = extra_geom.AGIPD_1MGeometry.from_crystfel_geom('/home/awollter/p003046/usr/Shared/awollter/xfel3046/geometry/p3046_manual_refined_geoass_run10.geom')
+geom = extra_geom.AGIPD_1MGeometry.from_crystfel_geom('/gpfs/exfel/u/usr/SPB/202202/p003046/Shared/tong/xfel3046/geometry/p3046_manual_refined_geoass_run10.geom')
 #geom = extra_geom.AGIPD_1MGeometry.from_crystfel_geom('geometry/agipd_august_2022_v3.geom')
 
 #geom = extra_geom.AGIPD_1MGeometry.from_crystfel_geom('geometry/agipd_2995_v04.geom')
@@ -62,75 +61,48 @@ def onEvent(evt):
     '''
     Print Processing rate
     '''
-    
+     
     analysis.event.printProcessingRate()
 
-    #print(analysis.event.printNativeKeys(evt))
-    #print(evt['SPB_RR_SYS/ADC/UTC1-2.channel_0.output.schema.data.rawData'])
-    #print(evt['SPB_DET_AGIPD1M-1/DET/9CH0:xtdf']['image.data'])
-    #print(evt['SPB_DET_AGIP1M-1/DET/STACKED:xtdf']['image.data'])
-    #print(evt['SPB_RR_SYS/ADC/UTC1-2:channel_0.output'].keys())
-
-    laser_voltage = evt['SPB_RR_SYS/ADC/UTC1-2:channel_0.output']['data.rawDataVolt']
-    laser_voltage.data = np.asarray(laser_voltage.data)
-
-
-    #print(laser_voltage.data.shape)
-    #    laser_rec = add_record(evt['analysis'], "analysis", "LASER", laser_voltage)
-    plotting.line.plotTrace(laser_voltage, group = 'analysis')
+    print(analysis.event.printNativeKeys(evt))
     
-    #det = evt['photonPixelDetectors']['AGIPD01'].data
     # det = evt['SPB_DET_AGIP1M-1/DET/STACKED:xtdf']['
-    #print(evt['SPB_DET_AGIP1M-1/DET/STACKED:xtdf'].keys())
-
-    trainId = evt['SPB_DET_AGIPD1M-1/DET/10CH0:xtdf']['header.trainId'].data
-
-    #print(laser_voltage.data.max() )
-
-    laserOn = int(laser_voltage.data.max() > 0)
-
-    laserOn_rec = add_record(evt['analysis'], "analysis", "laser on", laserOn)
-    plotting.line.plotHistory(evt['analysis']['laser on'],label='laser on')
-
-    #print('LASER ON' if laserOn else 'LASER OFF')
-    #print(det[0,0,:,:])
+    trainId = evt['SPB_DET_AGIPD1M-1/DET/APPEND']['detector.trainId'].data
+    laserOn = trainId % 2 
     #module = add_record(evt["analysis"], "analysis", "single", det[10,2,:,:])
- 
-    #print(module.data.sum())
 
     '''
     Assemble modules and plot
     '''
     
-    #print(centre)
     # applying the mask on the assebled detector image
-    # assem[:, mask] = np.nan    
+    # assem[:, mask] = np.nan
+    
     # plotting.image.plotImage(assem_rec, history=10, log = True)
-
-    modules = np.array(evt['photonPixelDetectors']['AGIPD Stacked'].data[1:])
+    modules = np.array(evt._evt['SPB_DET_AGIPD1M-1/DET/APPEND']['image.data'])[1:]
+    print(evt._evt['SPB_DET_AGIPD1M-1/DET/APPEND'].keys())
+    #modules = np.array(evt['photonPixelDetectors']['AGIPD Stacked'].data[1:])
 
     # normalisation of the 2D scattering patterns needed
     # norm_2d = np.average(modules[:, 2, roi_mask_x[0]:roi_mask_x[1], roi_mask_y[0]:roi_mask_x[1]])
     
-    assem, centre = geom.position_modules_fast(np.nanmean(modules, axis = 0))
-
+    #assem, centre = geom.position_modules_fast(np.nanmean(modules, axis = 0))
     #assem[:200,:200] = 10
+    #print(assem.mean())
     #print(np.isnan(assem))
+    #print(assem.shape)
     #print(centre)
     #assem[np.isnan(assem)] = -1
+   # assem[assemask] = -1
+    #assem_rec = add_record(evt['analysis'], 'analysis','assem_rec', assem[::-1,:])
+    #plotting.image.plotImage(assem_rec, history=10)
 
-    assem[assemask] = -1
-    assem_rec = add_record(evt['analysis'], 'analysis','assem_rec', assem[::-1,:])
-    plotting.image.plotImage(assem_rec, history=10)
+    #i_sum = np.sum(assem[:])
 
-
-    i_sum = np.sum(assem[:])
-
-    i_sum_rec = add_record(evt['analysis'], 'analysis','i_sum_rec', i_sum)
+    #i_sum_rec = add_record(evt['analysis'], 'analysis','i_sum_rec', i_sum)
     
-    plotting.line.plotHistory(evt['analysis']['i_sum_rec'],label='sum_I')
-
-    
+    #plotting.line.plotHistory(evt['analysis']['i_sum_rec'],label='sum_I')
+    '''
     Q, i = ai.integrate1d(assem,
                           npt,
                           #method = "BBox",
@@ -149,7 +121,6 @@ def onEvent(evt):
     norm = np.average(i[np.logical_and(Q>1.4, Q<1.7)])
     i_norm = i/norm    
 
-    print("Laser On, ", laserOn)
 
     if laserOn:
         light += i 
@@ -165,7 +136,7 @@ def onEvent(evt):
     else:
         return
         
-
+    '''
 
     #print(assem.shape)
     #det_arr[module_numbers] = mods[:,ind]                                                                           
