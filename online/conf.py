@@ -11,6 +11,7 @@ state = {}
 state['Facility'] = 'EuXFEL'
 state['EuXFEL/DataSource'] = 'tcp://10.253.0.74:55777'
 
+
 npt = 256
 
 light = np.zeros(npt)
@@ -20,7 +21,7 @@ diff = np.zeros(npt)
 n_light = 0
 n_dark = 0
 
-mask_file = '/home/awollter/p003046/usr/Shared/awollter/xfel3046/mask/agipd_mask.h5'
+mask_file = '../mask/agipd_mask.h5'
 with h5.File(mask_file,'r') as f:
     mask = np.asarray(f['combined'])
 
@@ -38,10 +39,19 @@ ai = azimuthalIntegrator.AzimuthalIntegrator(dist = detector_distance,
                                    pixel1 = pixel_size,
                                    pixel2 = pixel_size,
                                    rot1 = 0, rot2=0, rot3=0,
-                                   wavelength = wavelength)
+                                wavelength = wavelength)
 
 
-    
+'''
+find a way to implement a mask for an ROI that can be used to calculate difference scattering
+roi_mask
+using module 3, second asic from edge (p2a1 in geom file) 
+y = 0:127, x = 64:127
+roi_mask_x = [0,127]
+roi_mask_y = [64,127
+'''
+
+ 
 def onEvent(evt):
     global dark
     global light
@@ -59,18 +69,28 @@ def onEvent(evt):
     #print(evt['SPB_DET_AGIPD1M-1/DET/9CH0:xtdf']['image.data'])
     #print(evt['SPB_DET_AGIP1M-1/DET/STACKED:xtdf']['image.data'])
     #print(evt['SPB_RR_SYS/ADC/UTC1-2:channel_0.output'].keys())
+
     laser_voltage = evt['SPB_RR_SYS/ADC/UTC1-2:channel_0.output']['data.rawDataVolt']
     laser_voltage.data = np.asarray(laser_voltage.data)
+
+
     #print(laser_voltage.data.shape)
     #    laser_rec = add_record(evt['analysis'], "analysis", "LASER", laser_voltage)
-    #plotting.line.plotTrace(laser_voltage, group = 'analysis')
+    plotting.line.plotTrace(laser_voltage, group = 'analysis')
     
     #det = evt['photonPixelDetectors']['AGIPD01'].data
     # det = evt['SPB_DET_AGIP1M-1/DET/STACKED:xtdf']['
     #print(evt['SPB_DET_AGIP1M-1/DET/STACKED:xtdf'].keys())
+
     trainId = evt['SPB_DET_AGIPD1M-1/DET/10CH0:xtdf']['header.trainId'].data
+
     #print(laser_voltage.data.max() )
-    laserOn = laser_voltage.data.max() > 0
+
+    laserOn = int(laser_voltage.data.max() > 0)
+
+    laserOn_rec = add_record(evt['analysis'], "analysis", "laser on", laserOn)
+    plotting.line.plotHistory(evt['analysis']['laser on'],label='laser on')
+
     #print('LASER ON' if laserOn else 'LASER OFF')
     #print(det[0,0,:,:])
     #module = add_record(evt["analysis"], "analysis", "single", det[10,2,:,:])
@@ -83,29 +103,28 @@ def onEvent(evt):
     
     #print(centre)
     # applying the mask on the assebled detector image
-    # assem[:, mask] = np.nan
-    
-    
-    
-    
-
-    
-    
-
+    # assem[:, mask] = np.nan    
     # plotting.image.plotImage(assem_rec, history=10, log = True)
+
     modules = np.array(evt['photonPixelDetectors']['AGIPD Stacked'].data[1:])
 
+    # normalisation of the 2D scattering patterns needed
+    # norm_2d = np.average(modules[:, 2, roi_mask_x[0]:roi_mask_x[1], roi_mask_y[0]:roi_mask_x[1]])
+    
     assem, centre = geom.position_modules_fast(np.nanmean(modules, axis = 0))
+
     #assem[:200,:200] = 10
-    print(assem.mean())
     #print(np.isnan(assem))
-    print(assem.shape)
     #print(centre)
     #assem[np.isnan(assem)] = -1
+
     assem[assemask] = -1
     assem_rec = add_record(evt['analysis'], 'analysis','assem_rec', assem[::-1,:])
     plotting.image.plotImage(assem_rec, history=10)
-    
+
+    #i_sum = np.sum(assem[:])
+    #i_sum_rec = add_record(evt['analysis'], 'analysis','i_sum_rec', i_sum)   
+    #plotting.line.plotHistory(evt['analysis']['i_sum_rec'],label='sum_I')
     
     Q, i = ai.integrate1d(assem,
                           npt,
@@ -121,7 +140,11 @@ def onEvent(evt):
     
     plotting.line.plotTrace(i_rec, Q_rec)   
     
+    #normalize the scattering curves to intensity from q>1.4 to q<1.7
+    norm = np.average(i[np.logical_and(Q>1.4, Q<1.7)])
+    i_norm = i/norm    
 
+    print("Laser On, ", laserOn)
 
     if laserOn:
         light += i 
