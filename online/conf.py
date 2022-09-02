@@ -9,7 +9,8 @@ import extra_geom
 from pyFAI import azimuthalIntegrator
 state = {}
 state['Facility'] = 'EuXFEL'
-state['EuXFEL/DataSource'] = 'tcp://10.253.0.74:55777'
+#state['EuXFEL/DataSource'] = 'tcp://10.253.0.74:55777'
+state['EuXFEL/DataSource'] = 'tcp://max-exfl-display01.desy.de:9876'
 
 
 npt = 256
@@ -122,9 +123,13 @@ def onEvent(evt):
     assem_rec = add_record(evt['analysis'], 'analysis','assem_rec', assem[::-1,:])
     plotting.image.plotImage(assem_rec, history=10)
 
-    #i_sum = np.sum(assem[:])
-    #i_sum_rec = add_record(evt['analysis'], 'analysis','i_sum_rec', i_sum)   
-    #plotting.line.plotHistory(evt['analysis']['i_sum_rec'],label='sum_I')
+
+    i_sum = np.sum(assem[:])
+
+    i_sum_rec = add_record(evt['analysis'], 'analysis','i_sum_rec', i_sum)
+    
+    plotting.line.plotHistory(evt['analysis']['i_sum_rec'],label='sum_I')
+
     
     Q, i = ai.integrate1d(assem,
                           npt,

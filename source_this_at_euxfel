@@ -1,5 +1,6 @@
 #!/bin/bash
 module load exfel exfel_anaconda3 
+module load cuda/10.2
 
 source /gpfs/exfel/exp/SPB/202202/p003046/usr/Software/env/bin/activate
 

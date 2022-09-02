@@ -16,30 +16,15 @@ from extra_data import open_run, stack_detector_data
 import extra_data
 
 
-
-geomfilename = '../../xfel3046/geometry/agipd_2995_v04.geom'
+geomfilename = '../p3046_manual_refined_geoass_run10.geom'
 geom = AGIPD_1MGeometry.from_crystfel_geom(geomfilename)
-# geom.inspect()
-
-
-# geom = AGIPD_1MGeometry.from_quad_positions(quad_pos=[
-    # (-525, 625),
-    # (-550, -10),
-    # (520, -160),
-    # (542.5, 475),
-    # ])
-
-# center = circle_center(
-        # (276.134, 287.016),
-        # (410.735, 1034.42),
-        # (955.738, 562.901),
-        # )
-
-# # geom.inspect()
 
 
 
-run = open_run(proposal=3046, run=10)
+
+
+
+run = open_run(proposal=3046, run=24)
 
 sel = run.select('*/DET/*', 'image.data', require_all=True)
 
