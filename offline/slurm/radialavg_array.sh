@@ -1,9 +1,9 @@
 #!/bin/bash
 
-#SBATCH --array=5-13
+#SBATCH --array=91
 #SBATCH --time=04:00:00
 #SBATCH --partition=upex-beamtime
-#SBATCH --reservation=upex_002601
+#SBATCH --reservation=upex_003046
 #SBATCH --export=ALL
 #SBATCH -J radialavg
 #SBATCH -o .%j.out
@@ -11,12 +11,11 @@
 
 # Change the runs to process using the --array option on line 3
 
-PREFIX=/gpfs/exfel/exp/SQS/202102/p002601
+PREFIX=/gpfs/exfel/exp/SPB/202202/p003046
 
 source /etc/profile.d/modules.sh
-source ${PREFIX}/scratch/user/ayyerkar/source_this_at_euxfel
+source ${PREFIX}/scratch/filipe/xfel3046/source_this_at_euxfel
 
-DARK_RUN=61
 
-python ../radialavg.py ${SLURM_ARRAY_TASK_ID} ${DARK_RUN}
+python ../radialavg.py ${SLURM_ARRAY_TASK_ID} -i 100000
 
