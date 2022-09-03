@@ -10,21 +10,6 @@ import sys
 
 PREFIX = '/gpfs/exfel/exp/SPB/202202/p003046/'
 
-def copy_ids(fname, fptr):
-    print('Copying IDs from VDS file')
-    sys.stdout.flush()
-
-    f_vds = h5py.File(fname, 'r')
-    if 'entry_1/trainId' in fptr: del fptr['entry_1/trainId']
-    if 'entry_1/cellId' in fptr: del fptr['entry_1/cellId']
-    if 'entry_1/pulseId' in fptr: del fptr['entry_1/pulseId']
-
-    fptr['entry_1/trainId'] = f_vds['entry_1/trainId'][:]
-    fptr['entry_1/cellId'] = f_vds['entry_1/cellId'][:]
-    fptr['entry_1/pulseId'] = f_vds['entry_1/pulseId'][:]
-
-    f_vds.close()
-
 def main():
     import argparse
     parser = argparse.ArgumentParser(description='Radial average calculator')
@@ -37,6 +22,7 @@ def main():
 
     run = open_run(proposal=3046, run=args.run)
     volt = run['SPB_RR_SYS/ADC/UTC1-2:channel_0.output']['data.rawDataVolt'].ndarray()
+    train = run['SPB_RR_SYS/ADC/UTC1-2:channel_0.output']['data.trainId'].ndarray()
     laser_on = (np.max(volt,axis=1) > 0)
     vds_file = PREFIX+'scratch/vds/proc/r%.4d_proc.cxi' %args.run
     
@@ -45,7 +31,9 @@ def main():
         dset_name = 'entry_1/laser_on'
         if dset_name in outf: del outf[dset_name]
         outf[dset_name] = laser_on
-        copy_ids(vds_file, outf)
+        dset_name = 'entry_1/trainId'
+        if dset_name in outf: del outf[dset_name]
+        outf[dset_name] = train
     print('DONE')
                 
 if __name__ == '__main__':
