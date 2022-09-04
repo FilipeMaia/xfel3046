@@ -17,5 +17,5 @@ source /etc/profile.d/modules.sh
 source ${PREFIX}/scratch/filipe/xfel3046/source_this_at_euxfel
 
 
-python ../radialavg.py ${SLURM_ARRAY_TASK_ID} -i 100000
+python ../radialavg.py ${SLURM_ARRAY_TASK_ID}
 
