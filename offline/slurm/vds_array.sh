@@ -1,9 +1,10 @@
 #!/bin/bash
 
-#SBATCH --array=0004-0005
+##SBATCH --array=0004-0005
 #SBATCH --time=01:00:00
-#SBATCH --partition=upex-beamtime
-#SBATCH --reservation=upex_002995
+#SBATCH --partition=upex
+##SBATCH --partition=upex-beamtime
+##SBATCH --reservation=upex_003046
 #SBATCH --export=ALL
 #SBATCH -J vds
 #SBATCH -o .%j.out
@@ -14,7 +15,7 @@
 PREFIX=/gpfs/exfel/exp/SPB/202202/p003046/
 
 source /etc/profile.d/modules.sh
-source ${PREFIX}/scratch/usr/Shared/xfel3046/source_this_at_xfel
+source ${PREFIX}/usr/Shared/alfredo/xfel3046/source_this_at_euxfel
 
 run=`printf %.4d "${SLURM_ARRAY_TASK_ID}"`
 extra-data-make-virtual-cxi ${PREFIX}/proc/r${run} -o ${PREFIX}/scratch/vds/proc/r${run}_proc.cxi
