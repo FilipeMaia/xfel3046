@@ -14,15 +14,15 @@ import h5py
 import numpy as np
 import extra_geom
 import pyFAI.azimuthalIntegrator
+import extra_data
 
 PREFIX = '/gpfs/exfel/exp/SPB/202202/p003046/'
 ADU_PER_PHOTON = 5
 
 class RadialAverage():
-    def __init__(self, run, nproc=0, chunk_size=32, n_images=0):
+    def __init__(self, run, nproc=0, chunk_size=32, n_images=0, solid_angle=True, polarization=True, wavelength=None, distance=None):
         vds_file = PREFIX+'scratch/vds/proc/r%.4d_proc.cxi' %run
         print('Calculating radial average pixels from', vds_file)
-
         self.vds_file = vds_file
         self.chunk_size = chunk_size # Needs to be multiple of 32 for raw data
         if self.chunk_size % 32 != 0:
@@ -39,29 +39,52 @@ class RadialAverage():
 
             self.azi_avg_fname = PREFIX+'scratch/events/r%.4d_azimuth_avg.h5'%run
             
-        self.load_geom()
+        self.solid_angle_correction = solid_angle
+        self.polarization_correction = polarization
+
+        self.detector_distance = distance
+        self.wavelength = wavelength
+        self.load_geom(run)
         if(n_images != 0):
             self.n_images = min(n_images,self.dshape[0])
         else:
             self.n_images = self.dshape[0]
 
-    def load_geom(self):
+
+    def load_geom(self, run_n):
         geom = extra_geom.AGIPD_1MGeometry.from_crystfel_geom(PREFIX+'/scratch/geom/agipd_september_2022_v03.geom')
         pixel_size = 200e-6
-        detector_distance = 0.217
-        wavelength = 0.15498e-9 #8 keV
+        if(self.detector_distance is None):
+            from extra_data import open_run
+            run = open_run(proposal=3046,run=run_n)
+            self.detector_distance = (run["SPB_IRU_AGIPD1M/MOTOR/Z_STEPPER"]['actualPosition'].ndarray()[0]+121)*1e-3
+
+        if(self.wavelength is None):
+            from extra_data import open_run
+            run = open_run(proposal=3046,run=run_n)
+            energy = run['SPB_XTD2_UND/DOOCS/ENERGY']['actualPosition'].ndarray()[0] # in keV
+            self.wavelength = 1.23984193e-9/energy # in m
+                      
+            
+            
+        #wavelength = 0.15498e-9 #8 keV
         assem, centre = geom.position_modules_fast(np.empty(geom.expected_data_shape))
 
-        ai = pyFAI.azimuthalIntegrator.AzimuthalIntegrator(dist = detector_distance,
+        ai = pyFAI.azimuthalIntegrator.AzimuthalIntegrator(dist = self.detector_distance,
                                                            poni1 = centre[0] * pixel_size,
                                                            poni2 = centre[1] * pixel_size,
                                                            pixel1 = pixel_size,
                                                            pixel2 = pixel_size,
                                                            rot1 = 0, rot2=0, rot3=0,
-                                                           wavelength = wavelength)
+                                                           wavelength = self.wavelength)
         
         self.solid_angle = ai.solidAngleArray(shape=assem.shape)
         self.polarization = ai.polarization(shape=assem.shape,factor=1)
+        self.corrections = np.ones_like(assem)
+        if(self.solid_angle_correction):
+            self.corrections /= self.solid_angle
+        if(self.polarization_correction):
+            self.corrections /= self.polarization
         self.q = ai.qArray(shape=assem.shape)
         self.npts = 256
         self.intrad = np.floor(self.q/(np.max(self.q)+1e-7)*256).astype(int)
@@ -104,6 +127,7 @@ class RadialAverage():
             data = f_vds[self.dset_name][idx]
             assem, centre = self.geom.position_modules_fast(data)
             data = assem
+            data = assem*self.corrections
             if 0:
                 Q, i = self.ai.integrate1d(data,
                                            self.npts,
@@ -162,13 +186,23 @@ def main():
                         type=int, default=0)
     parser.add_argument('-i', '--images', help='Run on only the first i images',
                         type=int, default=0)
+    parser.add_argument('-s', '--solid-angle', help='Correct for the pixel solid angle',
+                        type=int, default=1)    
+    parser.add_argument('-p', '--polarization', help='Correct for polarization',
+                        type=int, default=1)
+    parser.add_argument('-d', '--distance', help='Override detector distance, in m',
+                        type=float, default=None)
+    parser.add_argument('-w', '--wavelength', help='Override Wavelength, in m',
+                        type=float, default=None)
     parser.add_argument('-o', '--out_folder', 
                         help='Path of output folder (default=%s/scratch/data/)'%PREFIX,
                         default=PREFIX+'scratch/data/')
     args = parser.parse_args()
 
 
-    l = RadialAverage(args.run, nproc=args.nproc, n_images=args.images)
+    l = RadialAverage(args.run, nproc=args.nproc, n_images=args.images,
+                      solid_angle=args.solid_angle, polarization=args.polarization,
+                      wavelength=args.wavelength, distance=args.distance)
 
     radialavg = l.run().reshape(l.n_images,l.max_rad,3)
     # Sum across all modules. This is wrong for the variance, but close enough
@@ -189,6 +223,31 @@ def main():
         if dset_name in outf: del outf[dset_name]
         with np.errstate(divide='ignore', invalid='ignore'):
             outf[dset_name] = radialavg[:,:,2]/radialavg[:,:,1]
+
+        dset_name = 'entry_1/polarization'
+        if dset_name in outf: del outf[dset_name]
+        with np.errstate(divide='ignore', invalid='ignore'):
+            outf[dset_name] = l.polarization
+
+        dset_name = 'entry_1/solid_angle'
+        if dset_name in outf: del outf[dset_name]
+        with np.errstate(divide='ignore', invalid='ignore'):
+            outf[dset_name] = l.solid_angle
+
+        dset_name = 'entry_1/good_pixels'
+        if dset_name in outf: del outf[dset_name]
+        with np.errstate(divide='ignore', invalid='ignore'):
+            outf[dset_name] = l.good_pixels
+
+        dset_name = 'entry_1/wavelength'
+        if dset_name in outf: del outf[dset_name]
+        with np.errstate(divide='ignore', invalid='ignore'):
+            outf[dset_name] = l.wavelength
+
+        dset_name = 'entry_1/detector_distance'
+        if dset_name in outf: del outf[dset_name]
+        with np.errstate(divide='ignore', invalid='ignore'):
+            outf[dset_name] = l.detector_distance                    
 
         dset_name = 'entry_1/q'
         if dset_name in outf: del outf[dset_name]
