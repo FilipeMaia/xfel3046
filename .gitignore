@@ -9,6 +9,9 @@ __pycache__/
 # Ignoring linear regression fitting results 
 offline/jupyter/linear_regression/
 
+# Ignoring motor plot results
+offline/jupyter/plots/
+
 # Distribution / packaging
 .Python
 build/
