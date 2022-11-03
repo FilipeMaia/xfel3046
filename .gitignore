@@ -6,6 +6,15 @@ __pycache__/
 # C extensions
 *.so
 
+# Ignoring linear regression fitting results 
+offline/jupyter/linear_regression/
+
+# Ignoring motor plot results
+offline/jupyter/plots/
+
+# Ignoring gif results
+offline/jupyter/gifs/
+
 # Distribution / packaging
 .Python
 build/
