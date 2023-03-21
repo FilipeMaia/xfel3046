@@ -111,3 +111,20 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+
+
+# Slurm log files
+offline/slurm/.*.out
+
+
+# Gromacs backup files
+\#*\#
+
+# Gromacs output files
+offline/md/*/*.tpr
+offline/md/*/*.trr
+offline/md/*/*.edr
+offline/md/*/*.cpt
+offline/md/*/*.pdb
+offline/md/*/mdout.mdp
