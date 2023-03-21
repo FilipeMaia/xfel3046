@@ -9,4 +9,4 @@ gmx grompp -f nvt.mdp -c em.gro -p topol.top -o nvt.tpr
 gmx mdrun -v -deffnm nvt
 gmx grompp -f npt -c nvt.gro -p topol.top -o npt.tpr
 gmx mdrun -v -deffnm npt
-echo 0 | gmx saxs -f npt.trr -s npt.tpr -xvg none -energy 8 -endq 20 -dt 5
+echo 0 | gmx saxs -f npt.trr -s npt.tpr -xvg none -energy 8 -endq 28 -dt 5

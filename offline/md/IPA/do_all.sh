@@ -1,4 +1,6 @@
+#!/bin/zsh
 # DESY's Maxwell specific modules
+source /etc/profile.d/modules.sh
 module load maxwell
 module load gromacs/2021.4
 gmx grompp -f minim.mdp -c out.gro -p topol.top -o em.tpr
