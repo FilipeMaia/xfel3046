@@ -1,9 +1,9 @@
 #!/bin/bash
 
-#SBATCH --array=91
+#SBATCH --array=67-79
 #SBATCH --time=04:00:00
-#SBATCH --partition=upex-beamtime
-#SBATCH --reservation=upex_003046
+#SBATCH --partition=upex
+##SBATCH --reservation=upex_003046
 #SBATCH --export=ALL
 #SBATCH -J radialavg
 #SBATCH -o .%j.out
